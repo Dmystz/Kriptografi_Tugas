@@ -248,6 +248,16 @@ function affine(text,key,enc=true){
 /* ================= PLAYFAIR ================= */
 function playfair(text,key,enc=true){
 
+    if(!/^[a-zA-Z]+$/.test(text)){
+        alert("Plaintext hanya boleh huruf A-Z saja!");
+        return "";
+    }
+
+    if(!/^[a-zA-Z]+$/.test(key)){
+        alert("Playfair key hanya boleh huruf A-Z saja!");
+        return "";
+    }
+
     key = clean(key).replace(/J/g,"I");
 
     let set="";
@@ -347,7 +357,7 @@ function invMatrix3(m){
 
     if(invDet === null){
         alert(
-            "Key TIDAK VALID!\n\n" +
+            "Hill key TIDAK VALID!\n\n" +
             "Determinan = " + d +
             "\nTidak punya inverse mod 26.\n" +
             "Hill Cipher tidak bisa didekripsi."
@@ -393,7 +403,7 @@ function hill(text, key, enc=true){
 
     if(k.length !== 9){
         alert(
-            "Key harus 9 angka!\n\n" +
+            "Hill key harus 9 angka!\n\n" +
             "Format:\n21,2,34,2,1,6,78,4,9"
         );
         return "";
