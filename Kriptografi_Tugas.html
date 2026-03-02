@@ -327,7 +327,7 @@ function modInv(a){
         if((a*i)%26===1) return i;
     }
 
-    return null; 
+    return null;
 }
 
 
@@ -343,19 +343,19 @@ function det3(m){
 function invMatrix3(m){
 
     let d = det3(m);
-
     let invDet = modInv(d);
 
     if(invDet === null){
         alert(
             "Key TIDAK VALID!\n\n" +
             "Determinan = " + d +
-            "\nTidak punya inverse mod 26\n" +
+            "\nTidak punya inverse mod 26.\n" +
             "Hill Cipher tidak bisa didekripsi."
         );
         return null;
     }
 
+    
     let adj = [
         m[4]*m[8]-m[5]*m[7],
         -(m[1]*m[8]-m[2]*m[7]),
@@ -374,20 +374,30 @@ function invMatrix3(m){
 }
 
 
+
 function hill(text, key, enc=true){
 
     text = clean(text);
 
-    while(text.length % 3 !== 0)
-        text += "X";
+
+    if(text.length % 3 !== 0){
+        alert(
+            "Hill Cipher 3x3 membutuhkan jumlah huruf kelipatan 3!\n\n" +
+            "Contoh valid:\nABC (3)\nNETWORKABC (9)\nHELLOWORLDXYZ (15)"
+        );
+        return "";
+    }
+
 
     let k = key.split(",").map(Number);
 
     if(k.length !== 9){
-        alert("Key harus 9 angka!");
+        alert(
+            "Key harus 9 angka!\n\n" +
+            "Format:\n21,2,34,2,1,6,78,4,9"
+        );
         return "";
     }
-
 
     let mat;
 
@@ -397,11 +407,12 @@ function hill(text, key, enc=true){
         mat = invMatrix3(k);
 
         if(mat === null)
-            return ""; 
+            return "";
     }
 
     let res = "";
 
+    
     for(let i=0;i<text.length;i+=3){
 
         let x = A.indexOf(text[i]);
@@ -417,20 +428,18 @@ function hill(text, key, enc=true){
 
     return res;
 }
+/* ================= ENIGMA ROTOR (FINAL FIX) ================= */
+function enigma(text, key, enc){
 
-/* ================= ENIGMA ROTOR ================= */
-function enigma(text,key,enc=true){
-
-    text = clean(text);
-
-    /* FORMAT: K0=AZDF;K1=DFGE */
-    let parts = key.split(";");
-
-    if(parts.length < 2){
-        alert("Format key: K0=XXXX;K1=XXXX");
+    // Kalau enc tidak dikirim → error jelas
+    if(typeof enc !== "boolean"){
+        alert("Mode Encrypt/Decrypt tidak terdeteksi!");
         return "";
     }
 
+    text = clean(text);
+
+    let parts = key.split(";");
     let rotors = [];
 
     for(let p of parts){
@@ -444,37 +453,48 @@ function enigma(text,key,enc=true){
 
     let res = "";
 
-    for(let i=0;i<text.length;i++){
+    for(let i = 0; i < text.length; i++){
 
         let rotor = rotors[i % rotors.length];
 
-        let index = A.indexOf(text[i]);
+        if(enc === true){
 
-        if(index === -1){
-            alert("Plaintext harus A-Z saja");
-            return "";
-        }
+            let idx = A.indexOf(text[i]);
 
-        if(index >= rotor.length){
-            alert("Huruf melebihi panjang rotor!");
-            return "";
-        }
-
-        if(enc){
-            res += rotor[index];
-        }else{
-            let pos = rotor.indexOf(text[i]);
-            if(pos === -1){
-                alert("Cipher tidak ada di rotor");
+            if(idx === -1){
+                alert("Teks harus A-Z");
                 return "";
             }
+
+            if(rotor.length <= idx){
+                alert(
+                    "Encrypt gagal!\n" +
+                    "Huruf '" + text[i] + "' butuh minimal " + (idx+1) +
+                    " huruf di rotor"
+                );
+                return "";
+            }
+
+            res += rotor[idx];
+
+        } else {
+
+            let pos = rotor.indexOf(text[i]);
+
+            if(pos === -1){
+                alert(
+                    "Decrypt gagal!\n" +
+                    "Huruf '" + text[i] + "' tidak ada di rotor"
+                );
+                return "";
+            }
+
             res += A[pos];
         }
     }
 
     return res;
 }
-
 /* ================= BUTTON ================= */
 function encrypt(){ run(true); }
 function decrypt(){ run(false); }
@@ -489,7 +509,7 @@ function run(enc){
     else if(algo==="affine") out = affine(text,key,enc);
     else if(algo==="playfair") out=playfair(text,key,enc);
     else if(algo==="hill") out=hill(text,key,enc);
-    else if(algo==="enigma") out=enigma(text,key);
+    else if(algo==="enigma") out=enigma(text,key,enc);
 
     document.getElementById("result").value=out;
 }
