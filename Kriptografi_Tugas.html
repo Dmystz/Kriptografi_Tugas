@@ -431,7 +431,6 @@ function hill(text, key, enc=true){
 /* ================= ENIGMA ROTOR (FINAL FIX) ================= */
 function enigma(text, key, enc){
 
-    // Kalau enc tidak dikirim → error jelas
     if(typeof enc !== "boolean"){
         alert("Mode Encrypt/Decrypt tidak terdeteksi!");
         return "";
