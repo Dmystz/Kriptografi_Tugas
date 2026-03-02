@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Kalkulator Kriptografi Klasik</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body{
+    margin:0;
+
+    background:url("background.jpg") center/cover no-repeat fixed;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+
+.container{
+    width:720px;
+    padding:36px;
+
+    background:rgba(8,18,35,0.92);
+    backdrop-filter: blur(14px);
+
+    border-radius:20px;
+
+    box-shadow:
+        0 0 30px rgba(0,170,255,.45);
+
+    color:white;
+}
+
+
+h2{
+    text-align:center;
+    margin-bottom:28px;
+
+    font-size:26px;
+    letter-spacing:1px;
+
+    color:#27d3ff;
+}
+
+
+textarea,
+input,
+select{
+    width:100%;
+    padding:12px 14px;
+    margin-bottom:14px;
+
+    background:rgba(255,255,255,0.07);
+    color:white;
+
+    border:1px solid rgba(0,200,255,0.45);
+    border-radius:10px;
+
+    font-size:14px;
+
+    transition:.2s;
+}
+
+
+textarea:focus,
+input:focus,
+select:focus{
+    outline:none;
+    border-color:#27d3ff;
+    box-shadow:0 0 8px rgba(39,211,255,.5);
+}
+
+
+select option{
+    background:#0a192d;
+    color:white;
+}
+
+
+::placeholder{
+    color:#bcd;
+}
+
+
+textarea{
+    height:90px;
+    resize:none;
+}
+
+
+.buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:14px;
+}
+
+
+button{
+    padding:12px;
+    border:none;
+    border-radius:10px;
+
+    font-weight:600;
+    font-size:14px;
+
+    background:linear-gradient(135deg,#00aaff,#0088cc);
+    color:white;
+
+    cursor:pointer;
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 12px rgba(0,170,255,.7);
+}
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h2>Kalkulator Kriptografi Klasik</h2>
+
+<select id="cipher">
+<option value="vigenere">Vigenere</option>
+<option value="affine">Affine</option>
+<option value="playfair">Playfair</option>
+<option value="hill">Hill (3x3)</option>
+<option value="enigma">Enigma</option>
+</select>
+
+<textarea id="plain" placeholder="Input text"></textarea>
+
+<input id="key" placeholder="Key / parameter">
+
+<small id="keyInfo" style="color:#8fdcff; display:block; margin-bottom:12px;"></small>
+
+<div class="buttons">
+    <button onclick="encrypt()">Encrypt</button>
+    <button onclick="decrypt()">Decrypt</button>
+</div>
+
+<textarea id="result" placeholder="Hasil"></textarea>
+
+</div>
+
+
+
+<script>
+const A="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+/* ================= SEMUA HURUF JADI KAPITAL/BESAR ================= */
+function clean(s){
+    return s.toUpperCase().replace(/[^A-Z]/g,"");
+}
+
+/* ================= VIGENERE ================= */
+function vigenere(text,key,enc=true){
+    text=clean(text);
+    key=clean(key);
+    let res="";
+
+    for(let i=0;i<text.length;i++){
+        let p=A.indexOf(text[i]);
+        let k=A.indexOf(key[i%key.length]);
+        let c=enc?(p+k)%26:(p-k+26)%26;
+        res+=A[c];
+    }
+    return res;
+}
+
+/* =========== AFFINE ============ */
+function mod(n){
+    return (n%26+26)%26;
+}
+
+function gcd(a,b){
+    while(b!==0){
+        [a,b]=[b,a%b];
+    }
+    return a;
+}
+
+function modInv(a){
+    a = mod(a);
+
+    for(let i=1;i<26;i++){
+        if((a*i)%26===1) return i;
+    }
+
+    return null; 
+}
+
+function affine(text,key,enc=true){
+
+    text = clean(text);
+
+    let parts = key.split(",");
+    if(parts.length!==2){
+        alert("Affine key harus format: a,b");
+        return "";
+    }
+
+    let a = parseInt(parts[0]);
+    let b = parseInt(parts[1]);
+
+    if(gcd(a,26)!==1){
+        alert("Key 'a' tidak invertible mod 26.\nDecrypt mustahil.");
+        return "";
+    }
+
+    let inv = modInv(a);
+
+    if(inv===null){
+        alert("Inverse tidak ada.");
+        return "";
+    }
+
+    let res="";
+
+    for(let ch of text){
+
+        let x=A.indexOf(ch);
+
+        let y;
+
+        if(enc)
+            y = mod(a*x + b);
+        else
+            y = mod(inv*(x-b));
+
+        res+=A[y];
+    }
+
+    return res;
+}
+
+/* ================= PLAYFAIR ================= */
+function playfair(text,key,enc=true){
+
+    key = clean(key).replace(/J/g,"I");
+
+    let set="";
+    for(let c of key+A)
+        if(!set.includes(c) && c!=="J") set+=c;
+
+    let grid=[];
+    for(let i=0;i<5;i++)
+        grid.push(set.slice(i*5,i*5+5));
+
+    text = clean(text).replace(/J/g,"I");
+
+    if(enc){
+        if(text.length % 2 !== 0){
+            text += "Q";
+        }
+    }
+
+    let pairs=[];
+
+    for(let i=0;i<text.length;i+=2){
+        let a=text[i], b=text[i+1];
+
+        if(enc){
+            if(a===b){
+                b="Q";
+                i--;
+            }
+        }
+
+        pairs.push(a+b);
+    }
+
+    function find(c){
+        for(let r=0;r<5;r++)
+            for(let col=0;col<5;col++)
+                if(grid[r][col]===c) return [r,col];
+    }
+
+    let res="";
+
+    for(let p of pairs){
+        let [r1,c1]=find(p[0]);
+        let [r2,c2]=find(p[1]);
+
+        if(r1===r2){
+            c1=(c1+(enc?1:4))%5;
+            c2=(c2+(enc?1:4))%5;
+        }
+        else if(c1===c2){
+            r1=(r1+(enc?1:4))%5;
+            r2=(r2+(enc?1:4))%5;
+        }
+        else{
+            [c1,c2]=[c2,c1];
+        }
+
+        res+=grid[r1][c1]+grid[r2][c2];
+    }
+
+    if(!enc && res.endsWith("Q")){
+        res = res.slice(0,-1);
+    }
+
+    return res;
+}
+/* ================= HILL 3x3 ================= */
+function mod(n){
+    return (n % 26 + 26) % 26;
+}
+
+
+function modInv(a){
+    a = mod(a);
+
+    for(let i=1;i<26;i++){
+        if((a*i)%26===1) return i;
+    }
+
+    return null; 
+}
+
+
+function det3(m){
+    return mod(
+        m[0]*(m[4]*m[8]-m[5]*m[7]) -
+        m[1]*(m[3]*m[8]-m[5]*m[6]) +
+        m[2]*(m[3]*m[7]-m[4]*m[6])
+    );
+}
+
+
+function invMatrix3(m){
+
+    let d = det3(m);
+
+    let invDet = modInv(d);
+
+    if(invDet === null){
+        alert(
+            "Key TIDAK VALID!\n\n" +
+            "Determinan = " + d +
+            "\nTidak punya inverse mod 26\n" +
+            "Hill Cipher tidak bisa didekripsi."
+        );
+        return null;
+    }
+
+    let adj = [
+        m[4]*m[8]-m[5]*m[7],
+        -(m[1]*m[8]-m[2]*m[7]),
+        m[1]*m[5]-m[2]*m[4],
+
+        -(m[3]*m[8]-m[5]*m[6]),
+        m[0]*m[8]-m[2]*m[6],
+        -(m[0]*m[5]-m[2]*m[3]),
+
+        m[3]*m[7]-m[4]*m[6],
+        -(m[0]*m[7]-m[1]*m[6]),
+        m[0]*m[4]-m[1]*m[3]
+    ];
+
+    return adj.map(x => mod(x * invDet));
+}
+
+
+function hill(text, key, enc=true){
+
+    text = clean(text);
+
+    while(text.length % 3 !== 0)
+        text += "X";
+
+    let k = key.split(",").map(Number);
+
+    if(k.length !== 9){
+        alert("Key harus 9 angka!");
+        return "";
+    }
+
+
+    let mat;
+
+    if(enc){
+        mat = k;
+    }else{
+        mat = invMatrix3(k);
+
+        if(mat === null)
+            return ""; 
+    }
+
+    let res = "";
+
+    for(let i=0;i<text.length;i+=3){
+
+        let x = A.indexOf(text[i]);
+        let y = A.indexOf(text[i+1]);
+        let z = A.indexOf(text[i+2]);
+
+        let r1 = mod(mat[0]*x + mat[1]*y + mat[2]*z);
+        let r2 = mod(mat[3]*x + mat[4]*y + mat[5]*z);
+        let r3 = mod(mat[6]*x + mat[7]*y + mat[8]*z);
+
+        res += A[r1] + A[r2] + A[r3];
+    }
+
+    return res;
+}
+
+/* ================= ENIGMA ROTOR ================= */
+function enigma(text,key,enc=true){
+
+    text = clean(text);
+
+    /* FORMAT: K0=AZDF;K1=DFGE */
+    let parts = key.split(";");
+
+    if(parts.length < 2){
+        alert("Format key: K0=XXXX;K1=XXXX");
+        return "";
+    }
+
+    let rotors = [];
+
+    for(let p of parts){
+        let r = p.split("=");
+        if(r.length !== 2){
+            alert("Format key salah!");
+            return "";
+        }
+        rotors.push(r[1].toUpperCase());
+    }
+
+    let res = "";
+
+    for(let i=0;i<text.length;i++){
+
+        let rotor = rotors[i % rotors.length];
+
+        let index = A.indexOf(text[i]);
+
+        if(index === -1){
+            alert("Plaintext harus A-Z saja");
+            return "";
+        }
+
+        if(index >= rotor.length){
+            alert("Huruf melebihi panjang rotor!");
+            return "";
+        }
+
+        if(enc){
+            res += rotor[index];
+        }else{
+            let pos = rotor.indexOf(text[i]);
+            if(pos === -1){
+                alert("Cipher tidak ada di rotor");
+                return "";
+            }
+            res += A[pos];
+        }
+    }
+
+    return res;
+}
+
+/* ================= BUTTON ================= */
+function encrypt(){ run(true); }
+function decrypt(){ run(false); }
+
+function run(enc){
+    let algo=document.getElementById("cipher").value;
+    let text=document.getElementById("plain").value;
+    let key=document.getElementById("key").value;
+    let out="";
+
+    if(algo==="vigenere") out=vigenere(text,key,enc);
+    else if(algo==="affine") out = affine(text,key,enc);
+    else if(algo==="playfair") out=playfair(text,key,enc);
+    else if(algo==="hill") out=hill(text,key,enc);
+    else if(algo==="enigma") out=enigma(text,key);
+
+    document.getElementById("result").value=out;
+}
+/* ================= UPDATE KEY INFO ================= */
+function updateKeyInfo(){
+
+    let cipher = document.getElementById("cipher").value;
+    let keyInput = document.getElementById("key");
+    let info = document.getElementById("keyInfo");
+
+    if(cipher === "vigenere"){
+        keyInput.placeholder = "Masukkan kata kunci";
+        info.innerText = "Contoh: KUNCI";
+    }
+
+    else if(cipher === "affine"){
+        keyInput.placeholder = "Format: a,b";
+        info.innerText = "Contoh: 5,8 (a harus relatif prima dengan 26)";
+    }
+
+    else if(cipher === "playfair"){
+        keyInput.placeholder = "Masukkan keyword huruf saja";
+        info.innerText = "Tidak boleh angka / simbol";
+    }
+
+    else if(cipher === "hill"){
+        keyInput.placeholder = "9 angka dipisah koma";
+        info.innerText = "Contoh: 2,4,5,9,2,1,3,17,7";
+    }
+
+    else if(cipher === "enigma"){
+        keyInput.placeholder = "Format rotor";
+        info.innerText = "Contoh: K0=AZDF;K1=DFGE";
+    }
+}
+
+document.getElementById("cipher")
+    .addEventListener("change", updateKeyInfo);
+
+updateKeyInfo();
+</script>
+
+</body>
+</html>
